@@ -2,7 +2,12 @@
 # Software Development Kits (SDKs)
 import smartsheet
 import os
-from datetime import *
+
+try:
+    from datetime import *
+except ImportError:
+    import datetime
+
 from pprint import pprint
 
 from simple_smartsheet import Smartsheet
@@ -34,7 +39,7 @@ Label_height = "1"          #Height of label
 
 
 # Token
-TK = 'hj8lpncr2xthejeb65h2bn24a3';
+TK = 'yru1qsr3323duwtyy7cwi26m4u'; #'hj8lpncr2xthejeb65h2bn24a3';
 
 # Initialize client
 smartsheet_client = smartsheet.Smartsheet(TK);
@@ -48,7 +53,7 @@ smartsheet_client.assume_user("wwei@briskheat.com")
 
 #TOKEN = os.getenv('HOME')
 #print(TOKEN)
-SHEET_NAME = '20210104Test'
+SHEET_NAME = 'UTR-Record'
 smartsheet = Smartsheet(TK)
 
 '''
@@ -70,6 +75,7 @@ def gen_Label(arg, r, c):
     Label(gui, text = arg, font=(Font, Font_size),
           height = Label_height, width = Label_width, bd=Label_bd,
           relief="groove").grid(row = r, column = c, sticky=NSEW)
+
 #===========================
 def FirstYieldingRate():
 
@@ -81,7 +87,7 @@ def FirstYieldingRate():
 def FindDataRange():
 
     dateFormat();
-    print(sDate, eDate);
+    print('here1', sDate, eDate);
 
 #===========================
 def EstimatePerCustomer():
@@ -105,8 +111,11 @@ def EstimatePerCustomer():
 
     UEGS (Entegris)
     '''
-    global Result
+    global Result;
     Result = {};
+
+    global FailureDic;
+    FailureDic = {}; #Counting the failure jacket number and Test1 error code
 
     if (i1.get() == True):
         print('AMAT');
@@ -133,24 +142,65 @@ def EstimatePerCustomer():
     gen_Label('Total test count', row_ini+11+j, column_ini+2); # Passing Count
     gen_Label('First pass yield rate (%)', row_ini+11+j, column_ini+3); # Passing Count
     j += 1;
+
+    TotSucc = 0; #Total successful counts`
+    TotTest = 0; #Total test counts
+
     for i in Result.keys():
-        print(i);
+
+        #print(i);
+        TotSucc += Result[i][0];
+        TotTest += Result[i][1];
+
         gen_Label(i, row_ini+11+j, column_ini); #Customer's name
         gen_Label(Result[i][0], row_ini+11+j, column_ini+1); # Passing Count
-        gen_Label(Result[i][1], row_ini+11+j, column_ini+2); # Passing Count
-        gen_Label((Result[i][0]/Result[i][1]*100), row_ini+11+j, column_ini+3); # Passing Count
+        gen_Label(Result[i][1], row_ini+11+j, column_ini+2); # Total Count
+        if (Result[i][1] != 0):
+            gen_Label("{0:.2f}".format(Result[i][0]/Result[i][1]*100), row_ini+11+j, column_ini+3); # first pass yield rate
+        elif (Result[i][1] == 0):
+            gen_Label('NA', row_ini+11+j, column_ini+3); # first pass yield rate
         j += 1;
     #print( len(sheet.rows) );
 
+    Label(gui, text = '', height = Label_height, bg = "grey", fg = "black",
+    bd=Label_bd).grid(row = row_ini+11+j, column = column_ini, sticky=NSEW, columnspan=7)
+
+    #Total sum
+    j += 1;
+    gen_Label('Sum', row_ini+11+j, column_ini); #Customer's name
+    gen_Label(TotSucc, row_ini+11+j, column_ini+1); # Passing Count
+    gen_Label(TotTest, row_ini+11+j, column_ini+2); # Total Count
+    gen_Label("{0:.2f}".format(TotSucc/TotTest*100), row_ini+11+j, column_ini+3); # first pass yield rate
+
+    j += 1;
+    Label(gui, text = '', height = Label_height, bg = "grey", fg = "black",
+    bd=Label_bd).grid(row = row_ini+11+j, column = column_ini, sticky=NSEW, columnspan=7)
+
+    j += 1;
+    gen_Label('Failure jackets: ', row_ini+11+j, column_ini); #Customer's name
+    gen_Label('Failure code: ', row_ini+11+j, column_ini+1); #Customer's name
+
+    j += 1;
+    for i in FailureDic.keys():
+        Label(gui, text = str(i), height = Label_height, bg = "grey", fg = "black",
+        bd=Label_bd).grid(row = row_ini+11+j, column = column_ini, sticky=NSEW);
+        Label(gui, text = FailureDic[str(i)], height = Label_height, bg = "grey", fg = "black",
+        bd=Label_bd).grid(row = row_ini+11+j, column = column_ini+1, sticky=NSEW);
+        j += 1;
+
+
+'''
     fig = go.Figure(data=go.Bar(y=[2, 3, 1]))
     fig.write_html('first_figure.html', auto_open=True)
-
+'''
 #===========================
 def sortByPartNum(nameInput):
 
+
+
     sheets = smartsheet.sheets.list();
     #pprint(sheets);
-    sheet = smartsheet.sheets.get('UTR - Record20201022')
+    sheet = smartsheet.sheets.get('UTR - Record')
     #pprint(sheet.__dict__)
     full_PartNum_name_Col = sheet.get_column("Part Number")
     #pprint(full_PartNum_name_Col.__dict__)
@@ -164,22 +214,28 @@ def sortByPartNum(nameInput):
         full_TType = str( row.get_cell("Test Type").value);
         full_Status = str( row.get_cell("Status").value);
         full_PT = str( row.get_cell('Passed 1St Test').value );
+        full_T1 = str( row.get_cell('Test 1').value );
 
-        rowDate = ( row.get_cell('Request Date').value );
+        rowDate = datetime.date( row.get_cell('Request Date').value );
 
-        #print(str(type(rowDate)))
+        #print('here2', row.get_cell('Request Date').value, str(type(rowDate)))
+
         if (str(type(rowDate)) == "<class 'datetime.date'>"): #Only process datetime.date type object
-            #print('datetime.date')
+            #print(type(rowDate))
             if ((rowDate - testsDate).days>0) and ((testeDate - rowDate).days > 0):
-
+                print('here2', row.get_cell('Request Date').value, str(type(rowDate)))
                 print((rowDate - testsDate).days, (testeDate - rowDate).days)
                 if full_Status.startswith("Complete") and full_TType.startswith("Design Validation (AMAT, ASM, TKBS, LAM...)"):
-                    if full_name.startswith(nameInput):
-                        #print(full_name, nameInput)
-                        #print(row.get_cell("Test 1").value)
-                        if full_PT.startswith("True"):
-                            #print(row.get_cell('Passed 1St Test').value)
+                    #print('Here3', nameInput)
+                    #print('here4', type(full_name))
+                    if full_name.startswith(nameInput)  and ( not full_T1.startswith("FC") ):
+                        #print('Here 3', full_name, nameInput)
+                        #print('Here 4', row.get_cell("Test 1").value)
+                        if ( full_PT.startswith("True") ) or ( full_T1.startswith("Passing") ) or ( full_T1.startswith("Approved") ):
+                            print(row.get_cell('Passed 1St Test').value, row.get_cell('Test 1').value)
                             CountSuccess += 1;
+                        else:
+                            FailureDic[str( row.get_cell("Part Number").value )] = str( row.get_cell('Test 1').value );
 
                         CountTotal += 1;
 
@@ -401,8 +457,9 @@ if __name__ == "__main__":
 
     #toggle of auto-Updating
     #t_btn = tk.Button(text='True', width=12, command=toggle).grid(row = row_ini , column = column_ini+6, sticky=NSEW)
-    t_btn = tk.Button(text='Switch Mic On', width=15, command=toggle)
-    t_btn.grid(row = row_ini , column = column_ini+6, sticky=NSEW, padx=10)
+    #t_btn = tk.Button(text='Switch Mic On', width=15, command=toggle)
+    #t_btn.grid(row = row_ini , column = column_ini+6, sticky=NSEW, padx=10)
+
 
 
     gui.mainloop()
