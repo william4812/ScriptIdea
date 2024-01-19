@@ -2,11 +2,153 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import *
 
-class TCplot():
+class TcPlotClass():
+    #def __init__
+    
+    def genTable(self):
+        labels = np.linspace(1,25,25)
+        
+        tableCol = [['TC Wafer', 'SP']]
+        for i, label in enumerate(labels):
+            tmp = 'TC' + str(int(label)) + ' ($^\circ$C)'
+            
 
-    def temp2Dmap(self):
+        
+        # average marks data for 5 consecutive years 
+        dataRaw = [[380.46, 379.39, 382.02, 380.67, 379.53,
+                383.30, 382.54, 381.63, 380.06, 378.75,
+                381.26, 378.56, 377.14, 379.11, 381.15,
+                378.21, 380.44, 381.72, 381.83, 380.32, 
+                380.53, 377.57, 380.48, 376.55, 377.99]]
+        
+        Tavg = sum(dataRaw[0])/len(dataRaw[0])
+        Tmax = max(dataRaw[0])
+        Tmin = min(dataRaw[0])
+        print(Tavg, Tmax, Tmin)
+        dataRaw[0].append(Tmin)
+        dataRaw[0].append(Tmax)
+        dataRaw[0].append(Tavg)
+
+        data = np.array(dataRaw).T
+        print(data, '\n', dataRaw)
+        
+
+        # average marks data for 5 consecutive years 
+        '''
+        data = [[98, 95,  93, 96,  97], 
+                [97, 92,  95, 94,  96], 
+                [98, 95,  93, 95,  94], 
+                [96, 94,  94, 92,  95], 
+                [95, 90,  91, 94,  98]] 
+        '''
+
+        columns = ('SP1', 'SP2') 
+        rows = ['TC %d' % x for x in range(1,26)] 
+        rows.append('Tmin')
+        rows.append('Tmax')
+        rows.append('Tavg')
+        
+        # Get some pastel shades for the colors 
+        colors = plt.cm.BuPu(np.linspace(0, 0.5, len(rows))) 
+        n_rows = len(data) 
+        
+        index = np.arange(len(columns)) + 0.3
+        bar_width = 0.4
+        
+        # Initialize the vertical-offset for 
+        # the line plots. 
+        y_offset = np.zeros(len(columns)) 
+        
+        # Plot line plots and create text labels  
+        # for the table 
+        cell_text = [] 
+        for row in range(n_rows): 
+                #plt.plot(index, data[row], color=colors[row]) 
+                y_offset = data[row] 
+                cell_text.append([x for x in y_offset]) 
+        
+        # Reverse colors and text labels to display 
+        # the last value at the top. 
+        #colors = colors[::-1] 
+        #cell_text.reverse() 
+        
+        # Add a table at the bottom of the axes 
+        the_table = plt.table(cellText=cell_text, 
+                        rowLabels=rows, 
+                        rowColours=colors, 
+                        colLabels=columns, 
+                        loc='right') 
+        
+        # Adjust layout to make room for the table: 
+        plt.subplots_adjust(left=0.08, 
+                            bottom=0.09,
+                            right=0.53,
+                            top = 0.88) 
+                           
+        
+        #plt.ylabel("marks".format(value_increment)) 
+        #plt.xticks([]) 
+        #plt.title('average marks in each consecutive year') 
+        #plt.tight_layout()
+        plt.show() 
+                
+    def temp2Dmap(self, tcLocDic, tcAvgList):
+        print(tcLocDic)
+        print(tcAvgList)
+
         fig, ax = plt.subplots()
+        center = (0, 0)     # set center to be origin
+        radius = 150        # set radius as 150 mm
+        
+        # create circle object with grey color
+        circle = plt.Circle(xy = center, 
+                            radius = radius, 
+                            color='grey',
+                            alpha=0.9)
+        
+        ax.add_patch(circle) # add circle object to plot
 
+        # set aspect ratio of the plot to be equalpip 
+        # install tkinterpip install tkinter
+        ax.set_aspect("equal")
+
+        # set limits slightly higher than radius and offset by center coordinates
+        plt.xlim([-radius - radius/5 + center[0], 
+                radius + radius/5 + center[0]])
+        plt.ylim([-radius - radius/5 + center[1], 
+                radius + radius/5 + center[1]])
+
+        # TC coordnates
+        x_coords=[]
+        z_coords=[]
+        for key, value in tcLocDic.items():
+            if key in range(1,26):
+                x_coords.append(value[0])
+                z_coords.append(value[1])        
+
+        Ttmp = tcAvgList
+
+        labels = np.linspace(1,len(x_coords),len(x_coords))
+        plt.scatter(x_coords, z_coords, s=100, c='red', marker='x')
+
+        for i, label in enumerate(labels):
+            tmp = 'TC' + str(int(label)) + ',\n ' + str(round(Ttmp[i],2)) + '$^\circ$C'
+            plt.annotate(tmp, (x_coords[i], z_coords[i]), 
+                        xytext=(5, -5), textcoords='offset points')
+
+        # label x and y axes
+        plt.xlabel("X (mm)")
+        plt.ylabel("Z (mm)")
+
+        # set title
+        plt.title('TC map')
+        #plt.imshow(Ttmp, cmap='hot', interpolation='nearest')
+        plt.tight_layout()
+        plt.show(block=False)
+
+    def temp2Dmap2(self):
+        fig, ax = plt.subplots()
+        
         # set center to be origin
         center = (0, 0) 
 
@@ -137,10 +279,11 @@ ax.set_title('Temperature Map on a Circular Shape')
 plt.show()
 '''
 
+
 def main():
-    
-    pltObj = TCplot()
-    pltObj.temp2Dmap()
+    pltObj = TcPlotClass()
+    pltObj.genTable()
+    #pltObj.temp2Dmap()
 
     #print(f"{os.environ['home']}")
 
